@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+// ── USERS (humanos) ───────────────────────────────────────────
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   DateTime? @map("email_verified")
+  name            String?   // nombre humano
+  hashedPassword  String
+  coverUrl        String?   @map("cover_url")
+  avatarUrl       String?   @map("avatar_url")
+  pushToken       String? // FCM/APNs token
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Auth.js (NextAuth v5)
+  accounts        Account[]
+  sessions        Session[]
+
+  // Relaciones
+  devices       Device[]
+  pets          Pet[]          // humano tiene 1-N mascotas
+
+  @@map("users")
+}
+
+// ── PETS (personajes activos) ─────────────────────────────────
+model Pet {
+  id        String   @id @default(cuid())
+  username  String   @unique // @handle dentro de Woofy
+  fullName  String   @map("full_name") // nombre real mascota
+  species   String   // dog, cat, etc.
+  coverUrl  String?  @map("cover_url")
+  avatarUrl String?  @map("avatar_url")
+  bio       String?  @db.Text
+  ownerId   String   @map("owner_id") // humano dueño
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@map("pets")
+}
+
+// ── USERS & AUTH (NextAuth.js v5) ───────────────────────────────
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
+
+
+
+// ── USERS  ───────────────────────────────
+
+// Tabla de dispositivos móviles
+model Device {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  platform  String   // ios, android, web
+  token     String   @unique // push token
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("devices")
+}
+
