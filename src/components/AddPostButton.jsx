@@ -6,7 +6,7 @@ const AddPostButton = () => {
   const { pending } = useFormStatus();
   return (
     <button
-      className="bg-orange-500 px-2 h-6 rounded-md text-white text-xs disabled:bg-orange-300 disabled:cursor-not-allowed self-end"
+      className="bg-orange-500 px-2 h-6 rounded-md text-white text-xs hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed self-end"
       disabled={pending}
     >
       {pending ? (
